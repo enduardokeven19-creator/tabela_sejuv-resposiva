@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Cadastro - Cores do Brasil</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --verde: #00802b;
+            --amarelo: #FFCC00;
+            --azul: #0066CC;
+            --branco: #FFFFFF;
+            --cinza-claro: #f8f9fa;
+            --cinza-escuro: #e9ecef;
+            --sombra: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --borda: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--verde) 0%, var(--azul) 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: var(--branco);
+            border-radius: 16px;
+            box-shadow: var(--sombra);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(to right, var(--verde), var(--azul));
+            color: var(--branco);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            color: var(--branco);
+        }
+        
+        h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--azul);
+            position: relative;
+            padding-bottom: 10px;
+        }
+        
+        h2:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: var(--amarelo);
+            border-radius: 3px;
+        }
+        
+        nav {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        nav a {
+            color: var(--branco);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        nav a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .card {
+            background: var(--branco);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--sombra);
+            border: var(--borda);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--azul);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: var(--cinza-claro);
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--azul);
+            box-shadow: 0 0 0 3px rgba(0, 103, 204, 0.1);
+        }
+        
+        button {
+            background: var(--azul);
+            color: var(--branco);
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 103, 204, 0.2);
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+        }
+        
+        .btn-delete:hover {
+            background: #bb2d3b;
+        }
+        
+        .btn-edit {
+            background: var(--amarelo);
+            color: #333;
+        }
+        
+        .btn-edit:hover {
+            background: #e6b800;
+        }
+        
+        .btn-info {
+            background: var(--verde);
+        }
+        
+        .btn-info:hover {
+            background: #006622;
+        }
+        
+        .btn-backup {
+            background: #6f42c1;
+        }
+        
+        .btn-export {
+            background: #fd7e14;
+        }
+        
+        .btn-save {
+            background: #198754;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--sombra);
+        }
+        
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: var(--azul);
+            color: var(--branco);
+            font-weight: 500;
+        }
+        
+        tr:nth-child(even) {
+            background-color: rgba(0, 157, 59, 0.05);
+        }
+        
+        tr:hover {
+            background: rgba(0, 103, 204, 0.03);
+        }
+        
+        .mensagem {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .sucesso {
+            background: #d4edda;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+        
+        .erro {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+        }
+        
+        .alerta {
+            background: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffecb5;
+        }
+        
+        .admin-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        .admin-card {
+            background: var(--branco);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--sombra);
+            border-top: 4px solid var(--azul);
+            transition: transform 0.3s;
+        }
+        
+        .admin-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .contato-info {
+            display: none;
+            background: #e8f4fc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid var(--azul);
+        }
+        
+        .login-container {
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 30px;
+            background: var(--branco);
+            border-radius: 16px;
+            box-shadow: var(--sombra);
+        }
+        
+        .center {
+            text-align: center;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .visible {
+            display: block;
+        }
+        
+        .info-box {
+            background: #e7f5ff;
+            border-left: 4px solid var(--azul);
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .offline-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: var(--sombra);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .online {
+            background: var(--verde);
+            color: white;
+        }
+        
+        .offline {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .edit-form {
+            background: rgba(255, 204, 0, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 2px dashed var(--amarelo);
+        }
+        
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 15px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .logo-icon {
+            font-size: 28px;
+            color: var(--amarelo);
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+                padding: 15px;
+            }
+            
+            nav {
+                justify-content: center;
+                margin-top: 15px;
+                width: 100%;
+            }
+            
+            nav a {
+                flex: 1;
+                justify-content: center;
+                min-width: 120px;
+            }
+            
+            .admin-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 12px 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .offline-status {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                text-align: center;
+                justify-content: center;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            .user-badge {
+                margin: 10px 0 0 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="offlineStatus" class="offline-status hidden"><i class="fas fa-wifi"></i> Modo Offline</div>
+    
+    <div class="container">
+        <!-- Página de Login -->
+        <div id="loginPage" class="content visible">
+            <div class="login-container">
+                <div class="center logo">
+                    <i class="fas fa-database logo-icon"></i>
+                    <h1 style="color: var(--azul);">Sistema de Cadastro</h1>
+                </div>
+                <p class="center" style="margin-bottom: 25px; color: #666;">Área restrita para usuários autorizados</p>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail"><i class="fas fa-envelope"></i> Email:</label>
+                        <input type="email" id="loginEmail" placeholder="Seu email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginSenha"><i class="fas fa-lock"></i> Senha:</label>
+                        <input type="password" id="loginSenha" placeholder="Sua senha" required>
+                    </div>
+                    <div class="form-group center">
+                        <button type="submit"><i class="fas fa-sign-in-alt"></i> Entrar</button>
+                    </div>
+                </form>
+                
+                <div class="info-box">
+                    <p><strong><i class="fas fa-info-circle"></i> Acesso restrito</strong></p>
+                    <p>Entre em contato com o administrador para obter acesso ao sistema.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página de Cadastro de Usuário (apenas para administradores) -->
+        <div id="cadastroPage" class="content hidden">
+            <header>
+                <div>
+                    <h1><i class="fas fa-user-plus"></i> Cadastrar Novo Usuário</h1>
+                    <div class="user-badge">
+                        <i class="fas fa-user"></i>
+                        <span id="currentUser"></span>
+                    </div>
+                </div>
+                <nav>
+                    <a href="#" onclick="mostrarPagina('tabelaPage')"><i class="fas fa-table"></i> Ver Tabela</a>
+                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                </nav>
+            </header>
+            
+            <div class="card">
+                <h2>Adicionar Novo Usuário</h2>
+                <form id="cadastroUserForm">
+                    <div class="form-group">
+                        <label for="cadastroEmail">Email:</label>
+                        <input type="email" id="cadastroEmail" placeholder="Email do novo usuário" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cadastroSenha">Senha:</label>
+                        <input type="password" id="cadastroSenha" placeholder="Senha para o usuário" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmarSenha">Confirmar Senha:</label>
+                        <input type="password" id="confirmarSenha" placeholder="Repita a senha" required>
+                    </div>
+                    <div class="form-group center">
+                        <button type="submit"><i class="fas fa-user-plus"></i> Cadastrar Usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Página de Área de Cadastro de Registros -->
+        <div id="areaCadastroPage" class="content hidden">
+            <header>
+                <div>
+                    <h1><i class="fas fa-plus-circle"></i> Cadastro de Registros</h1>
+                    <div class="user-badge">
+                        <i class="fas fa-user"></i>
+                        <span id="currentUser2"></span>
+                    </div>
+                </div>
+                <nav>
+                    <a href="#" onclick="mostrarPagina('tabelaPage')"><i class="fas fa-table"></i> Ver Tabela</a>
+                    <a href="#" onclick="mostrarPagina('adminPage')"><i class="fas fa-database"></i> Backup</a>
+                    <a href="#" onclick="mostrarPagina('cadastroPage')" id="adminLink" class="hidden"><i class="fas fa-users-cog"></i> Admin</a>
+                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                </nav>
+            </header>
+            
+            <div class="card">
+                <div class="info-box">
+                    <p><strong><i class="fas fa-lightbulb"></i> Dica:</strong> Seus dados são salvos automaticamente no navegador.</p>
+                </div>
+                
+                <h2>Novo Registro</h2>
+                <form id="cadastroForm">
+                    <div class="form-group">
+                        <label for="local">Local:</label>
+                        <input type="text" id="local" required placeholder="Digite o local">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="data">Data:</label>
+                        <input type="date" id="data" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="horario">Horário:</label>
+                        <input type="time" id="horario" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="responsavel">Responsável:</label>
+                        <input type="text" id="responsavel" required placeholder="Nome do responsável">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contato">Contato do Responsável:</label>
+                        <textarea id="contato" rows="3" placeholder="Telefone, email ou outras informações de contato"></textarea>
+                    </div>
+                    
+                    <button type="submit"><i class="fas fa-plus"></i> Adicionar Registro</button>
+                </form>
+                
+                <div id="mensagem"></div>
+            </div>
+        </div>
+
+        <!-- Página da Tabela de Registros -->
+        <div id="tabelaPage" class="content hidden">
+            <header>
+                <div>
+                    <h1><i class="fas fa-list-alt"></i> Tabela de Registros</h1>
+                    <div class="user-badge">
+                        <i class="fas fa-user"></i>
+                        <span id="currentUser3"></span>
+                    </div>
+                </div>
+                <nav>
+                    <a href="#" onclick="mostrarPagina('areaCadastroPage')"><i class="fas fa-plus-circle"></i> Adicionar</a>
+                    <a href="#" onclick="mostrarPagina('adminPage')"><i class="fas fa-database"></i> Backup</a>
+                    <a href="#" onclick="mostrarPagina('cadastroPage')" id="adminLink2" class="hidden"><i class="fas fa-users-cog"></i> Admin</a>
+                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                </nav>
+            </header>
+            
+            <div class="card">
+                <div class="info-box">
+                    <p><strong><i class="fas fa-info-circle"></i> Instruções:</strong> Clique em "Editar" para modificar um registro ou em "Contato" para ver informações de contato.</p>
+                </div>
+                
+                <h2>Registros Cadastrados</h2>
+                <div class="table-container">
+                    <table id="tabelaRegistros">
+                        <thead>
+                            <tr>
+                                <th>Local</th>
+                                <th>Data</th>
+                                <th>Horário</th>
+                                <th>Responsável</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Os registros serão inseridos aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página de Administração -->
+        <div id="adminPage" class="content hidden">
+            <header>
+                <div>
+                    <h1><i class="fas fa-database"></i> Administração - Backup de Dados</h1>
+                    <div class="user-badge">
+                        <i class="fas fa-user"></i>
+                        <span id="currentUser4"></span>
+                    </div>
+                </div>
+                <nav>
+                    <a href="#" onclick="mostrarPagina('tabelaPage')"><i class="fas fa-arrow-left"></i> Voltar</a>
+                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                </nav>
+            </header>
+
+            <div class="card">
+                <div class="info-box">
+                    <p><strong><i class="fas fa-exclamation-triangle"></i> Backup é essencial!</strong> Faça backup regularmente para garantir que não perca seus dados.</p>
+                </div>
+            </div>
+
+            <div class="admin-panel">
+                <div class="admin-card">
+                    <h2><i class="fas fa-file-export"></i> Criar Backup (JSON)</h2>
+                    <p>Salva todos os dados em formato JSON para backup</p>
+                    <div class="form-group">
+                        <label for="backupName">Nome do arquivo:</label>
+                        <input type="text" id="backupName" placeholder="Nome do backup" value="backup-dados">
+                    </div>
+                    <button onclick="fazerBackupJSON()" class="btn-backup"><i class="fas fa-download"></i> Criar Backup JSON</button>
+                </div>
+
+                <div class="admin-card">
+                    <h2><i class="fas fa-file-excel"></i> Exportar para Excel</h2>
+                    <p>Exporta todos os registros para planilha Excel (XLSX)</p>
+                    <button onclick="exportarParaExcel()" class="btn-export"><i class="fas fa-file-export"></i> Exportar para Excel</button>
+                </div>
+
+                <div class="admin-card">
+                    <h2><i class="fas fa-file-import"></i> Restaurar Backup</h2>
+                    <p>Restaura os dados a partir de um arquivo JSON</p>
+                    <div class="form-group">
+                        <label for="restoreFile">Selecionar arquivo JSON:</label>
+                        <input type="file" id="restoreFile" accept=".json">
+                    </div>
+                    <button onclick="restaurarBackup()" class="btn-info"><i class="fas fa-upload"></i> Restaurar Dados</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-chart-bar"></i> Estatísticas do Sistema</h2>
+                <div id="estatisticas">
+                    <p>Carregando estatísticas...</p>
+                </div>
+                
+                <div id="backupStatus" class="info-box">
+                    <p><strong>Status de backup:</strong> Nenhum backup realizado recentemente.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let registros = [];
+        let usuarios = [];
+        let usuarioLogado = null;
+        let ultimoBackup = null;
+        let isOnline = true;
+        let registroEditando = null;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar status de conexão
+            verificarConexao();
+            window.addEventListener('online', verificarConexao);
+            window.addEventListener('offline', verificarConexao);
+            
+            // Carregar dados do localStorage
+            carregarDados();
+            
+            // Verificar se há usuário logado
+            const usuarioSalvo = localStorage.getItem('usuarioLogado');
+            if (usuarioSalvo) {
+                usuarioLogado = JSON.parse(usuarioSalvo);
+                atualizarInterfaceUsuario();
+                mostrarPagina('tabelaPage');
+                carregarRegistros();
+                atualizarEstatisticas();
+                verificarBackupStatus();
+            }
+
+            // Configurar formulários
+            document.getElementById('loginForm').addEventListener('submit', fazerLogin);
+            document.getElementById('cadastroUserForm').addEventListener('submit', cadastrarUsuario);
+            document.getElementById('cadastroForm').addEventListener('submit', adicionarRegistro);
+            
+            // Configurar data atual como padrão
+            document.getElementById('data').valueAsDate = new Date();
+        });
+
+        // Atualizar interface com informações do usuário
+        function atualizarInterfaceUsuario() {
+            if (usuarioLogado) {
+                document.querySelectorAll('#currentUser, #currentUser2, #currentUser3, #currentUser4').forEach(el => {
+                    el.textContent = usuarioLogado.email;
+                });
+                
+                // Mostrar link de admin apenas para o administrador
+                if (usuarioLogado.email === "admin@exemplo.com") {
+                    document.querySelectorAll('#adminLink, #adminLink2').forEach(el => {
+                        el.classList.remove('hidden');
+                    });
+                }
+            }
+        }
+
+        // Verificar status de conexão
+        function verificarConexao() {
+            isOnline = navigator.onLine;
+            const statusElement = document.getElementById('offlineStatus');
+            
+            if (isOnline) {
+                statusElement.innerHTML = '<i class="fas fa-wifi"></i> Modo Online';
+                statusElement.className = 'offline-status online';
+                statusElement.classList.remove('hidden');
+                setTimeout(() => {
+                    statusElement.classList.add('hidden');
+                }, 3000);
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-wifi-slash"></i> Modo Offline - Trabalhando localmente';
+                statusElement.className = 'offline-status offline';
+                statusElement.classList.remove('hidden');
+            }
+        }
+
+        // Carregar dados do localStorage
+        function carregarDados() {
+            try {
+                registros = JSON.parse(localStorage.getItem('registros')) || [];
+                usuarios = JSON.parse(localStorage.getItem('usuarios')) || [{email: "admin@exemplo.com", senha: "123456"}];
+                ultimoBackup = localStorage.getItem('ultimoBackup');
+                
+                // Se não há usuários, cria o padrão
+                if (usuarios.length === 0) {
+                    usuarios = [{email: "admin@exemplo.com", senha: "123456"}];
+                    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                }
+            } catch (e) {
+                console.error("Erro ao carregar dados:", e);
+                mostrarMensagem("Erro ao carregar dados. Pode ser necessário restaurar de um backup.", "erro");
+            }
+        }
+
+        // Funções de navegação
+        function mostrarPagina(paginaId) {
+            document.querySelectorAll('.content').forEach(pagina => {
+                pagina.classList.remove('visible');
+                pagina.classList.add('hidden');
+            });
+            document.getElementById(paginaId).classList.remove('hidden');
+            document.getElementById(paginaId).classList.add('visible');
+            
+            if (paginaId === 'tabelaPage') {
+                carregarRegistros();
+            } else if (paginaId === 'adminPage') {
+                atualizarEstatisticas();
+                verificarBackupStatus();
+            }
+            
+            // Limpar edição se estiver saindo da tabela
+            if (paginaId !== 'tabelaPage' && registroEditando) {
+                cancelarEdicao();
+            }
+        }
+
+        function logout() {
+            usuarioLogado = null;
+            localStorage.removeItem('usuarioLogado');
+            mostrarPagina('loginPage');
+        }
+
+        // Funções de autenticação
+        function fazerLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const senha = document.getElementById('loginSenha').value;
+            
+            const usuario = usuarios.find(u => u.email === email && u.senha === senha);
+            
+            if (usuario) {
+                usuarioLogado = usuario;
+                localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+                atualizarInterfaceUsuario();
+                mostrarMensagem('Login realizado com sucesso!', 'sucesso');
+                setTimeout(() => {
+                    mostrarPagina('tabelaPage');
+                    carregarRegistros();
+                    verificarNecessidadeBackup();
+                }, 1000);
+            } else {
+                mostrarMensagem('Email ou senha incorretos!', 'erro');
+            }
+        }
+
+        function cadastrarUsuario(e) {
+            e.preventDefault();
+            
+            // Verificar se o usuário atual é o administrador
+            if (usuarioLogado.email !== "admin@exemplo.com") {
+                mostrarMensagem('Apenas o administrador pode cadastrar novos usuários!', 'erro');
+                return;
+            }
+            
+            const email = document.getElementById('cadastroEmail').value;
+            const senha = document.getElementById('cadastroSenha').value;
+            const confirmarSenha = document.getElementById('confirmarSenha').value;
+            
+            if (senha !== confirmarSenha) {
+                mostrarMensagem('As senhas não coincidem!', 'erro');
+                return;
+            }
+            
+            // Verificar se o email já existe
+            if (usuarios.some(u => u.email === email)) {
+                mostrarMensagem('Este email já está cadastrado!', 'erro');
+                return;
+            }
+            
+            // Adicionar novo usuário
+            const novoUsuario = { email, senha };
+            usuarios.push(novoUsuario);
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            
+            mostrarMensagem('Usuário cadastrado com sucesso!', 'sucesso');
+            document.getElementById('cadastroUserForm').reset();
+        }
+
+        // Funções de CRUD para registros
+        function adicionarRegistro(e) {
+            e.preventDefault();
+            
+            const novoRegistro = {
+                id: Date.now(),
+                local: document.getElementById('local').value,
+                data: document.getElementById('data').value,
+                horario: document.getElementById('horario').value,
+                responsavel: document.getElementById('responsavel').value,
+                contato: document.getElementById('contato').value,
+                dataCriacao: new Date().toISOString()
+            };
+            
+            registros.push(novoRegistro);
+            salvarDados();
+            
+            document.getElementById('cadastroForm').reset();
+            document.getElementById('data').valueAsDate = new Date();
+            
+            mostrarMensagem('Registro adicionado com sucesso!', 'sucesso');
+        }
+
+        function salvarDados() {
+            localStorage.setItem('registros', JSON.stringify(registros));
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+        }
+
+        function carregarRegistros() {
+            const tbody = document.querySelector('#tabelaRegistros tbody');
+            tbody.innerHTML = '';
+            
+            if (registros.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum registro encontrado.</td></tr>';
+                return;
+            }
+            
+            // Ordenar registros por data (mais recente primeiro)
+            const registrosOrdenados = [...registros].sort((a, b) => 
+                new Date(b.dataCriacao) - new Date(a.dataCriacao)
+            );
+            
+            registrosOrdenados.forEach(registro => {
+                const tr = document.createElement('tr');
+                
+                const data = new Date(registro.data);
+                const dataFormatada = data.toLocaleDateString('pt-BR');
+                
+                tr.innerHTML = `
+                    <td>${registro.local}</td>
+                    <td>${dataFormatada}</td>
+                    <td>${registro.horario}</td>
+                    <td>${registro.responsavel}</td>
+                    <td>
+                        <button class="btn-info" onclick="mostrarContato(${registro.id})"><i class="fas fa-address-card"></i> Contato</button>
+                        <button class="btn-edit" onclick="editarRegistro(${registro.id})"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="btn-delete" onclick="excluirRegistro(${registro.id})"><i class="fas fa-trash"></i> Excluir</button>
+                        <div id="contato-${registro.id}" class="contato-info">
+                            <strong>Contato:</strong><br>
+                            ${registro.contato || 'Nenhum contato informado.'}
+                        </div>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        function editarRegistro(id) {
+            // Cancelar edição anterior se houver
+            if (registroEditando) {
+                cancelarEdicao();
+            }
+            
+            const registro = registros.find(r => r.id === id);
+            if (!registro) return;
+            
+            registroEditando = id;
+            
+            const tr = document.querySelector(`button[onclick="editarRegistro(${id})"]`).parentNode.parentNode;
+            
+            tr.innerHTML = `
+                <td colspan="5">
+                    <div class="edit-form">
+                        <h3>Editando Registro</h3>
+                        <form onsubmit="salvarEdicao(event, ${id})">
+                            <div class="form-group">
+                                <label for="edit-local">Local:</label>
+                                <input type="text" id="edit-local" value="${registro.local}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-data">Data:</label>
+                                <input type="date" id="edit-data" value="${registro.data}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-horario">Horário:</label>
+                                <input type="time" id="edit-horario" value="${registro.horario}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-responsavel">Responsável:</label>
+                                <input type="text" id="edit-responsavel" value="${registro.responsavel}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-contato">Contato:</label>
+                                <textarea id="edit-contato" rows="3">${registro.contato || ''}</textarea>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar</button>
+                                <button type="button" class="btn-cancel" onclick="cancelarEdicao()"><i class="fas fa-times"></i> Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                </td>
+            `;
+        }
+
+        function salvarEdicao(e, id) {
+            e.preventDefault();
+            
+            const registroIndex = registros.findIndex(r => r.id === id);
+            if (registroIndex === -1) return;
+            
+            registros[registroIndex] = {
+                ...registros[registroIndex],
+                local: document.getElementById('edit-local').value,
+                data: document.getElementById('edit-data').value,
+                horario: document.getElementById('edit-horario').value,
+                responsavel: document.getElementById('edit-responsavel').value,
+                contato: document.getElementById('edit-contato').value
+            };
+            
+            salvarDados();
+            registroEditando = null;
+            carregarRegistros();
+            
+            mostrarMensagem('Registro atualizado com sucesso!', 'sucesso');
+        }
+
+        function cancelarEdicao() {
+            registroEditando = null;
+            carregarRegistros();
+        }
+
+        function mostrarContato(id) {
+            const contatoDiv = document.getElementById(`contato-${id}`);
+            if (contatoDiv.style.display === 'block') {
+                contatoDiv.style.display = 'none';
+            } else {
+                // Fecha outros contatos abertos
+                document.querySelectorAll('.contato-info').forEach(info => {
+                    info.style.display = 'none';
+                });
+                contatoDiv.style.display = 'block';
+            }
+        }
+
+        function excluirRegistro(id) {
+            if (confirm('Tem certeza que deseja excluir este registro?')) {
+                registros = registros.filter(r => r.id !== id);
+                salvarDados();
+                carregarRegistros();
+                atualizarEstatisticas();
+                mostrarMensagem('Registro excluído com sucesso!', 'sucesso');
+            }
+        }
+
+        // Funções de backup e exportação
+        function fazerBackupJSON() {
+            const backupName = document.getElementById('backupName').value || 'backup-dados';
+            const dataStr = JSON.stringify({
+                registros: registros,
+                usuarios: usuarios,
+                dataBackup: new Date().toISOString(),
+                versao: '1.0'
+            }, null, 2);
+            
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = `${backupName}-${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            // Atualizar data do último backup
+            ultimoBackup = new Date().toISOString();
+            localStorage.setItem('ultimoBackup', ultimoBackup);
+            verificarBackupStatus();
+            
+            mostrarMensagem('Backup JSON criado com sucesso!', 'sucesso');
+        }
+
+        function exportarParaExcel() {
+            if (registros.length === 0) {
+                mostrarMensagem('Não há registros para exportar!', 'erro');
+                return;
+            }
+            
+            // Preparar dados para exportação
+            const dadosExportacao = registros.map(registro => ({
+                'Local': registro.local,
+                'Data': registro.data,
+                'Horário': registro.horario,
+                'Responsável': registro.responsavel,
+                'Contato': registro.contato || '',
+                'Data de Criação': new Date(registro.dataCriacao).toLocaleString('pt-BR')
+            }));
+            
+            // Criar planilha
+            const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+            
+            // Gerar arquivo
+            XLSX.writeFile(workbook, `registros-${new Date().toISOString().slice(0,10)}.xlsx`);
+            
+            mostrarMensagem('Planilha Excel exportada com sucesso!', 'sucesso');
+        }
+
+        function restaurarBackup() {
+            const fileInput = document.getElementById('restoreFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                mostrarMensagem('Selecione um arquivo JSON para restaurar!', 'erro');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dados = JSON.parse(e.target.result);
+                    
+                    if (!dados.registros || !Array.isArray(dados.registros)) {
+                        throw new Error('Formato de arquivo inválido');
+                    }
+                    
+                    if (!confirm(`Tem certeza que deseja restaurar ${dados.registros.length} registros? Todos os dados atuais serão substituídos.`)) {
+                        return;
+                    }
+                    
+                    registros = dados.registros;
+                    if (dados.usuarios && Array.isArray(dados.usuarios)) {
+                        usuarios = dados.usuarios;
+                    }
+                    
+                    salvarDados();
+                    
+                    mostrarMensagem(`Backup restaurado com sucesso! ${dados.registros.length} registros importados.`, 'sucesso');
+                    carregarRegistros();
+                    atualizarEstatisticas();
+                    
+                    // Limpar seleção de arquivo
+                    fileInput.value = '';
+                    
+                } catch (error) {
+                    console.error(error);
+                    mostrarMensagem('Erro ao processar arquivo: ' + error.message, 'erro');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function atualizarEstatisticas() {
+            const estatisticasDiv = document.getElementById('estatisticas');
+            const totalRegistros = registros.length;
+            
+            if (totalRegistros === 0) {
+                estatisticasDiv.innerHTML = '<p>Nenhum registro cadastrado ainda.</p>';
+                return;
+            }
+            
+            // Encontrar o registro mais recente
+            const maisRecente = [...registros].sort((a, b) => 
+                new Date(b.dataCriacao) - new Date(a.dataCriacao)
+            )[0];
+            
+            // Contar registros por local
+            const locais = {};
+            registros.forEach(registro => {
+                if (!locais[registro.local]) {
+                    locais[registro.local] = 0;
+                }
+                locais[registro.local]++;
+            });
+            
+            let locaisHTML = '';
+            for (const local in locais) {
+                locaisHTML += `<li><strong>${local}:</strong> ${locais[local]} registro(s)</li>`;
+            }
+            
+            estatisticasDiv.innerHTML = `
+                <p><strong>Total de registros:</strong> ${totalRegistros}</p>
+                <p><strong>Último registro:</strong> ${new Date(maisRecente.dataCriacao).toLocaleString('pt-BR')}</p>
+                <p><strong>Registros por local:</strong></p>
+                <ul>${locaisHTML}</ul>
+            `;
+        }
+
+        function verificarBackupStatus() {
+            const backupStatusDiv = document.getElementById('backupStatus');
+            
+            if (!ultimoBackup) {
+                backupStatusDiv.innerHTML = '<p><strong>Status de backup:</strong> Nenhum backup realizado ainda. É recomendado fazer backup regularmente.</p>';
+                backupStatusDiv.className = 'alerta';
+                return;
+            }
+            
+            const dataBackup = new Date(ultimoBackup);
+            const diasDesdeBackup = Math.floor((new Date() - dataBackup) / (1000 * 60 * 60 * 24));
+            
+            if (diasDesdeBackup > 7) {
+                backupStatusDiv.innerHTML = `<p><strong>Status de backup:</strong> Seu último backup foi há ${diasDesdeBackup} dias. É altamente recomendado fazer um novo backup.</p>`;
+                backupStatusDiv.className = 'erro';
+            } else if (diasDesdeBackup > 3) {
+                backupStatusDiv.innerHTML = `<p><strong>Status de backup:</strong> Seu último backup foi há ${diasDesdeBackup} dias. Considere fazer um novo backup em breve.</p>`;
+                backupStatusDiv.className = 'alerta';
+            } else {
+                backupStatusDiv.innerHTML = `<p><strong>Status de backup:</strong> Seu último backup foi há ${diasDesdeBackup} dias. Está em dia!</p>`;
+                backupStatusDiv.className = 'sucesso';
+            }
+        }
+
+        function verificarNecessidadeBackup() {
+            if (!ultimoBackup && registros.length > 5) {
+                if (confirm('Você tem vários registros mas ainda não fez backup. Deseja fazer um backup agora?')) {
+                    mostrarPagina('adminPage');
+                }
+            }
+        }
+
+        function mostrarMensagem(texto, tipo) {
+            // Remover mensagens existentes
+            const mensagensExistentes = document.querySelectorAll('.mensagem');
+            mensagensExistentes.forEach(msg => msg.remove());
+            
+            const mensagemDiv = document.createElement('div');
+            mensagemDiv.className = `mensagem ${tipo}`;
+            
+            // Adicionar ícone conforme o tipo
+            let icone = '';
+            if (tipo === 'sucesso') icone = '<i class="fas fa-check-circle"></i> ';
+            if (tipo === 'erro') icone = '<i class="fas fa-exclamation-circle"></i> ';
+            if (tipo === 'alerta') icone = '<i class="fas fa-exclamation-triangle"></i> ';
+            
+            mensagemDiv.innerHTML = icone + texto;
+            
+            // Adicionar a mensagem no container apropriado
+            const container = document.querySelector('.content.visible .card') || document.querySelector('.content.visible');
+            container.prepend(mensagemDiv);
+            
+            // Remover após 5 segundos
+            setTimeout(() => {
+                if (mensagemDiv.parentNode) {
+                    mensagemDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
