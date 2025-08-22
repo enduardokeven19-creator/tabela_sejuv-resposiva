@@ -3,9 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Cadastro com Persistência</title>
+    <title>Sistema de Cadastro com Firebase</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase App (o core do Firebase) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="config.js"></script>
     <style>
         :root {
             --verde: #00802b;
@@ -393,6 +400,35 @@
             border-bottom: none;
         }
         
+        .search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .search-box input {
+            flex: 1;
+        }
+        
+        .local-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .evento-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .evento-item:last-child {
+            border-bottom: none;
+        }
+        
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -449,6 +485,16 @@
                 align-items: flex-start;
                 gap: 10px;
             }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .evento-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
         }
     </style>
 </head>
@@ -497,7 +543,7 @@
                     </div>
                 </div>
                 <nav>
-                    <a href="#" onclick="mostrarPagina('tabelaPage')"><i class="fas fa-table"></i> Ver Tabela</a>
+                    <a href="#" onclick="mostrarPagina('tabelaPage')"><i class="fas fa-table"></i> Ver Locais</a>
                     <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
                 </nav>
             </header>
@@ -531,18 +577,18 @@
             </div>
         </div>
 
-        <!-- Página de Área de Cadastro de Registros -->
+        <!-- Página de Área de Cadastro de Locais -->
         <div id="areaCadastroPage" class="content hidden">
             <header>
                 <div>
-                    <h1><i class="fas fa-plus-circle"></i> Cadastro de Registros</h1>
+                    <h1><i class="fas fa-plus-circle"></i> Cadastro de Locais</h1>
                     <div class="user-badge">
                         <i class="fas fa-user"></i>
                         <span id="currentUser2"></span>
                     </div>
                 </div>
                 <nav>
-                    <a href="#" onclick="mostrarPagina('tabelaPage')"><i class="fas fa-table"></i> Ver Tabela</a>
+                    <a href="#" onclick="mostrarPagina('tabelaPage')"><i class="fas fa-table"></i> Ver Locais</a>
                     <a href="#" onclick="mostrarPagina('adminPage')"><i class="fas fa-database"></i> Backup</a>
                     <a href="#" onclick="mostrarPagina('cadastroPage')" id="adminLink" class="hidden"><i class="fas fa-users-cog"></i> Admin</a>
                     <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
@@ -554,45 +600,95 @@
                     <p><strong><i class="fas fa-lightbulb"></i> Dica:</strong> Seus dados são salvos automaticamente.</p>
                 </div>
                 
-                <h2>Novo Registro</h2>
-                <form id="cadastroForm">
+                <h2>Novo Local</h2>
+                <form id="cadastroLocalForm">
                     <div class="form-group">
-                        <label for="local">Local:</label>
-                        <input type="text" id="local" required placeholder="Digite o local">
+                        <label for="nomeLocal">Nome do Local:</label>
+                        <input type="text" id="nomeLocal" required placeholder="Digite o nome do local (ex: Quadra da Escola X)">
                     </div>
                     
                     <div class="form-group">
-                        <label for="data">Data:</label>
-                        <input type="date" id="data" required>
+                        <label for="enderecoLocal">Endereço:</label>
+                        <input type="text" id="enderecoLocal" required placeholder="Digite o endereço completo">
                     </div>
                     
                     <div class="form-group">
-                        <label for="horario">Horário:</label>
-                        <input type="time" id="horario" required>
+                        <label for="responsavelLocal">Responsável pelo Local:</label>
+                        <input type="text" id="responsavelLocal" required placeholder="Nome do responsável">
                     </div>
                     
                     <div class="form-group">
-                        <label for="responsavel">Responsável:</label>
-                        <input type="text" id="responsavel" required placeholder="Nome do responsável">
+                        <label for="contatoLocal">Contato do Responsável:</label>
+                        <textarea id="contatoLocal" rows="3" placeholder="Telefone, email ou outras informações de contato"></textarea>
                     </div>
                     
                     <div class="form-group">
-                        <label for="contato">Contato do Responsável:</label>
-                        <textarea id="contato" rows="3" placeholder="Telefone, email ou outras informações de contato"></textarea>
+                        <label for="capacidadeLocal">Capacidade:</label>
+                        <input type="number" id="capacidadeLocal" placeholder="Número de pessoas (opcional)">
                     </div>
                     
-                    <button type="submit"><i class="fas fa-plus"></i> Adicionar Registro</button>
+                    <button type="submit"><i class="fas fa-plus"></i> Adicionar Local</button>
                 </form>
                 
                 <div id="mensagem"></div>
             </div>
+
+            <div class="card">
+                <h2>Adicionar Evento a um Local</h2>
+                <form id="cadastroEventoForm">
+                    <div class="form-group">
+                        <label for="localEvento">Selecionar Local:</label>
+                        <select id="localEvento" required>
+                            <option value="">Selecione um local</option>
+                            <!-- Opções serão preenchidas via JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="escolaEvento">Nome da Escola/Grupo:</label>
+                        <input type="text" id="escolaEvento" required placeholder="Digite o nome da escola ou grupo">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dataEvento">Data:</label>
+                        <input type="date" id="dataEvento" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="horarioInicio">Horário de Início:</label>
+                        <input type="time" id="horarioInicio" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="horarioFim">Horário de Término:</label>
+                        <input type="time" id="horarioFim" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="responsavelEvento">Responsável pelo Evento:</label>
+                        <input type="text" id="responsavelEvento" required placeholder="Nome do responsável">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contatoEvento">Contato do Responsável:</label>
+                        <textarea id="contatoEvento" rows="3" placeholder="Telefone, email ou outras informações de contato"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observacoesEvento">Observações:</label>
+                        <textarea id="observacoesEvento" rows="3" placeholder="Informações adicionais (opcional)"></textarea>
+                    </div>
+                    
+                    <button type="submit"><i class="fas fa-plus"></i> Adicionar Evento</button>
+                </form>
+            </div>
         </div>
 
-        <!-- Página da Tabela de Registros -->
+        <!-- Página da Tabela de Locais -->
         <div id="tabelaPage" class="content hidden">
             <header>
                 <div>
-                    <h1><i class="fas fa-list-alt"></i> Tabela de Registros</h1>
+                    <h1><i class="fas fa-list-alt"></i> Locais Cadastrados</h1>
                     <div class="user-badge">
                         <i class="fas fa-user"></i>
                         <span id="currentUser3"></span>
@@ -608,25 +704,39 @@
             
             <div class="card">
                 <div class="info-box">
-                    <p><strong><i class="fas fa-info-circle"></i> Instruções:</strong> Clique em "Editar" para modificar um registro ou em "Contato" para ver informações de contato.</p>
+                    <p><strong><i class="fas fa-info-circle"></i> Instruções:</strong> Clique em um local para ver os eventos agendados.</p>
                 </div>
                 
-                <h2>Registros Cadastrados</h2>
+                <h2>Locais Cadastrados</h2>
+                
+                <div class="search-box">
+                    <input type="text" id="pesquisaLocal" placeholder="Pesquisar local por nome..." onkeyup="filtrarLocais()">
+                    <button onclick="limparPesquisa()"><i class="fas fa-times"></i> Limpar</button>
+                </div>
+                
                 <div class="table-container">
-                    <table id="tabelaRegistros">
+                    <table id="tabelaLocais">
                         <thead>
                             <tr>
                                 <th>Local</th>
-                                <th>Data</th>
-                                <th>Horário</th>
+                                <th>Endereço</th>
                                 <th>Responsável</th>
+                                <th>Eventos Agendados</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Os registros serão inseridos aqui via JavaScript -->
+                            <!-- Os locais serão inseridos aqui via JavaScript -->
                         </tbody>
                     </table>
+                </div>
+                
+                <div id="detalhesLocal" class="local-details hidden">
+                    <h3>Eventos no Local: <span id="nomeLocalDetalhes"></span></h3>
+                    <div id="listaEventos">
+                        <!-- Lista de eventos será preenchida via JavaScript -->
+                    </div>
+                    <button onclick="fecharDetalhes()" class="btn-cancel"><i class="fas fa-arrow-left"></i> Voltar</button>
                 </div>
             </div>
         </div>
@@ -695,19 +805,21 @@
     </div>
 
     <script>
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
         // Variáveis globais
-        let registros = [];
+        let locais = [];
+        let eventos = [];
         let usuarios = [];
         let usuarioLogado = null;
         let ultimoBackup = null;
         let isOnline = true;
-        let registroEditando = null;
-
-        // API URL - usando JSONBin.io para persistência (gratuito)
-        const API_BASE = 'https://api.jsonbin.io/v3/b';
-        const BIN_ID_USUARIOS = '68a89f62d0ea881f40609404'; // Substitua pelo seu bin ID
-        const BIN_ID_REGISTROS = '68a89f9ad0ea881f40609430'; // Substitua pelo seu bin ID
-        const API_KEY = '$2a$10$NC7cjNTX1oDjhFt4VceTzu9GZwBIAYj3FcQ/X7YVR3zUbDuc302f.'; // Substitua pela sua chave
+        let localEditando = null;
+        let localSelecionado = null;
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
@@ -716,102 +828,75 @@
             window.addEventListener('online', verificarConexao);
             window.addEventListener('offline', verificarConexao);
             
-            // Carregar dados
-            carregarDados();
-            
             // Configurar formulários
             document.getElementById('loginForm').addEventListener('submit', fazerLogin);
             document.getElementById('cadastroUserForm').addEventListener('submit', cadastrarUsuario);
-            document.getElementById('cadastroForm').addEventListener('submit', adicionarRegistro);
+            document.getElementById('cadastroLocalForm').addEventListener('submit', adicionarLocal);
+            document.getElementById('cadastroEventoForm').addEventListener('submit', adicionarEvento);
             
             // Configurar data atual como padrão
-            document.getElementById('data').valueAsDate = new Date();
+            document.getElementById('dataEvento').valueAsDate = new Date();
+            
+            // Verificar se há usuário logado
+            const usuarioSalvo = localStorage.getItem('usuarioLogado');
+            if (usuarioSalvo) {
+                usuarioLogado = JSON.parse(usuarioSalvo);
+                atualizarInterfaceUsuario();
+                mostrarPagina('tabelaPage');
+                carregarLocais();
+                atualizarEstatisticas();
+                verificarBackupStatus();
+            }
         });
 
-        // Carregar dados da API
+        // Carregar dados do Firebase
         async function carregarDados() {
             try {
+                // Carregar locais
+                const locaisSnapshot = await db.collection('locais').get();
+                locais = locaisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Carregar eventos
+                const eventosSnapshot = await db.collection('eventos').get();
+                eventos = eventosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
                 // Carregar usuários
-                const responseUsuarios = await fetch(`${API_BASE}/${BIN_ID_USUARIOS}/latest`, {
-                    headers: {
-                        'X-Master-Key': API_KEY
-                    }
-                });
+                const usuariosSnapshot = await db.collection('usuarios').get();
+                usuarios = usuariosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                if (responseUsuarios.ok) {
-                    const data = await responseUsuarios.json();
-                    usuarios = data.record?.usuarios || [{email: "admin@exemplo.com", senha: "123456"}];
-                } else {
-                    usuarios = [{email: "admin@exemplo.com", senha: "123456"}];
+                // Se não houver usuários, criar o admin padrão
+                if (usuarios.length === 0) {
+                    await criarUsuarioPadrao();
                 }
                 
-                // Carregar registros
-                const responseRegistros = await fetch(`${API_BASE}/${BIN_ID_REGISTROS}/latest`, {
-                    headers: {
-                        'X-Master-Key': API_KEY
-                    }
-                });
+                // Atualizar selects de locais
+                atualizarSelectLocais();
                 
-                if (responseRegistros.ok) {
-                    const data = await responseRegistros.json();
-                    registros = data.record?.registros || [];
-                } else {
-                    registros = [];
-                }
-                
-                // Verificar se há usuário logado
-                const usuarioSalvo = localStorage.getItem('usuarioLogado');
-                if (usuarioSalvo) {
-                    usuarioLogado = JSON.parse(usuarioSalvo);
-                    atualizarInterfaceUsuario();
-                    mostrarPagina('tabelaPage');
-                    carregarRegistros();
-                    atualizarEstatisticas();
-                    verificarBackupStatus();
-                }
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
                 mostrarMensagem("Erro ao carregar dados. Verifique sua conexão.", "erro");
                 
                 // Usar dados locais em caso de falha
-                usuarios = JSON.parse(localStorage.getItem('usuarios')) || [{email: "admin@exemplo.com", senha: "123456"}];
-                registros = JSON.parse(localStorage.getItem('registros')) || [];
+                locais = JSON.parse(localStorage.getItem('locais')) || [];
+                eventos = JSON.parse(localStorage.getItem('eventos')) || [];
+                usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
                 ultimoBackup = localStorage.getItem('ultimoBackup');
             }
         }
 
-        // Salvar dados na API
-        async function salvarDados() {
+        // Criar usuário padrão (admin) se não existir
+        async function criarUsuarioPadrao() {
             try {
-                // Salvar usuários
-                await fetch(`${API_BASE}/${BIN_ID_USUARIOS}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': API_KEY
-                    },
-                    body: JSON.stringify({ usuarios })
-                });
+                const adminUser = {
+                    email: "admin@exemplo.com",
+                    senha: "123456",
+                    criadoEm: new Date().toISOString()
+                };
                 
-                // Salvar registros
-                await fetch(`${API_BASE}/${BIN_ID_REGISTROS}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': API_KEY
-                    },
-                    body: JSON.stringify({ registros })
-                });
-                
-                // Também salvar localmente como fallback
-                localStorage.setItem('usuarios', JSON.stringify(usuarios));
-                localStorage.setItem('registros', JSON.stringify(registros));
+                await db.collection('usuarios').add(adminUser);
+                usuarios.push(adminUser);
             } catch (error) {
-                console.error("Erro ao salvar dados:", error);
-                // Salvar apenas localmente em caso de falha
-                localStorage.setItem('usuarios', JSON.stringify(usuarios));
-                localStorage.setItem('registros', JSON.stringify(registros));
-                mostrarMensagem("Dados salvos localmente (sem conexão).", "alerta");
+                console.error("Erro ao criar usuário padrão:", error);
             }
         }
 
@@ -832,44 +917,17 @@
             }
         }
 
-        // Carregar lista de usuários para administrador
-        function carregarListaUsuarios() {
-            const listaUsuarios = document.getElementById('listaUsuarios');
-            listaUsuarios.innerHTML = '';
+        // Atualizar select de locais no formulário de eventos
+        function atualizarSelectLocais() {
+            const select = document.getElementById('localEvento');
+            select.innerHTML = '<option value="">Selecione um local</option>';
             
-            if (usuarios.length === 0) {
-                listaUsuarios.innerHTML = '<p>Nenhum usuário cadastrado.</p>';
-                return;
-            }
-            
-            usuarios.forEach(usuario => {
-                if (usuario.email === "admin@exemplo.com") return; // Não mostrar admin na lista
-                
-                const userItem = document.createElement('div');
-                userItem.className = 'user-item';
-                userItem.innerHTML = `
-                    <div>
-                        <strong>${usuario.email}</strong>
-                    </div>
-                    <div>
-                        <button class="btn-delete" onclick="excluirUsuario('${usuario.email}')">
-                            <i class="fas fa-trash"></i> Excluir
-                        </button>
-                    </div>
-                `;
-                
-                listaUsuarios.appendChild(userItem);
+            locais.forEach(local => {
+                const option = document.createElement('option');
+                option.value = local.id;
+                option.textContent = local.nome;
+                select.appendChild(option);
             });
-        }
-
-        // Excluir usuário
-        async function excluirUsuario(email) {
-            if (confirm(`Tem certeza que deseja excluir o usuário ${email}?`)) {
-                usuarios = usuarios.filter(u => u.email !== email);
-                await salvarDados();
-                carregarListaUsuarios();
-                mostrarMensagem('Usuário excluído com sucesso!', 'sucesso');
-            }
         }
 
         // Verificar status de conexão
@@ -901,45 +959,58 @@
             document.getElementById(paginaId).classList.add('visible');
             
             if (paginaId === 'tabelaPage') {
-                carregarRegistros();
+                carregarLocais();
             } else if (paginaId === 'adminPage') {
                 atualizarEstatisticas();
                 verificarBackupStatus();
             } else if (paginaId === 'cadastroPage' && usuarioLogado?.email === "admin@exemplo.com") {
                 carregarListaUsuarios();
+            } else if (paginaId === 'areaCadastroPage') {
+                atualizarSelectLocais();
             }
             
             // Limpar edição se estiver saindo da tabela
-            if (paginaId !== 'tabelaPage' && registroEditando) {
+            if (paginaId !== 'tabelaPage' && localEditando) {
                 cancelarEdicao();
             }
         }
 
         function logout() {
+            auth.signOut();
             usuarioLogado = null;
             localStorage.removeItem('usuarioLogado');
             mostrarPagina('loginPage');
         }
 
         // Funções de autenticação
-        function fazerLogin(e) {
+        async function fazerLogin(e) {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const senha = document.getElementById('loginSenha').value;
             
-            const usuario = usuarios.find(u => u.email === email && u.senha === senha);
-            
-            if (usuario) {
-                usuarioLogado = usuario;
-                localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+            try {
+                // Tentar autenticar com Firebase Auth
+                const userCredential = await auth.signInWithEmailAndPassword(email, senha);
+                usuarioLogado = userCredential.user;
+                
+                // Salvar informações do usuário
+                localStorage.setItem('usuarioLogado', JSON.stringify({
+                    email: usuarioLogado.email,
+                    uid: usuarioLogado.uid
+                }));
+                
+                // Carregar dados do sistema
+                await carregarDados();
+                
                 atualizarInterfaceUsuario();
                 mostrarMensagem('Login realizado com sucesso!', 'sucesso');
                 setTimeout(() => {
                     mostrarPagina('tabelaPage');
-                    carregarRegistros();
+                    carregarLocais();
                     verificarNecessidadeBackup();
                 }, 1000);
-            } else {
+            } catch (error) {
+                console.error("Erro no login:", error);
                 mostrarMensagem('Email ou senha incorretos!', 'erro');
             }
         }
@@ -962,79 +1033,192 @@
                 return;
             }
             
-            // Verificar se o email já existe
-            if (usuarios.some(u => u.email === email)) {
-                mostrarMensagem('Este email já está cadastrado!', 'erro');
-                return;
+            try {
+                // Criar usuário no Firebase Auth
+                const userCredential = await auth.createUserWithEmailAndPassword(email, senha);
+                
+                // Salvar informações adicionais no Firestore
+                await db.collection('usuarios').add({
+                    email: email,
+                    criadoEm: new Date().toISOString(),
+                    criadoPor: usuarioLogado.email
+                });
+                
+                mostrarMensagem('Usuário cadastrado com sucesso!', 'sucesso');
+                document.getElementById('cadastroUserForm').reset();
+                carregarListaUsuarios();
+            } catch (error) {
+                console.error("Erro ao cadastrar usuário:", error);
+                mostrarMensagem('Erro ao cadastrar usuário: ' + error.message, 'erro');
             }
-            
-            // Adicionar novo usuário
-            const novoUsuario = { email, senha };
-            usuarios.push(novoUsuario);
-            await salvarDados();
-            
-            mostrarMensagem('Usuário cadastrado com sucesso!', 'sucesso');
-            document.getElementById('cadastroUserForm').reset();
-            carregarListaUsuarios();
         }
 
-        // Funções de CRUD para registros
-        async function adicionarRegistro(e) {
+        // Carregar lista de usuários para administrador
+        async function carregarListaUsuarios() {
+            const listaUsuarios = document.getElementById('listaUsuarios');
+            listaUsuarios.innerHTML = '';
+            
+            try {
+                const usuariosSnapshot = await db.collection('usuarios').get();
+                const usuariosList = usuariosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (usuariosList.length === 0) {
+                    listaUsuarios.innerHTML = '<p>Nenhum usuário cadastrado.</p>';
+                    return;
+                }
+                
+                usuariosList.forEach(usuario => {
+                    if (usuario.email === "admin@exemplo.com") return; // Não mostrar admin na lista
+                    
+                    const userItem = document.createElement('div');
+                    userItem.className = 'user-item';
+                    userItem.innerHTML = `
+                        <div>
+                            <strong>${usuario.email}</strong>
+                        </div>
+                        <div>
+                            <button class="btn-delete" onclick="excluirUsuario('${usuario.id}')">
+                                <i class="fas fa-trash"></i> Excluir
+                            </button>
+                        </div>
+                    `;
+                    
+                    listaUsuarios.appendChild(userItem);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar usuários:", error);
+                listaUsuarios.innerHTML = '<p>Erro ao carregar lista de usuários.</p>';
+            }
+        }
+
+        // Excluir usuário
+        async function excluirUsuario(userId) {
+            if (confirm(`Tem certeza que deseja excluir este usuário?`)) {
+                try {
+                    await db.collection('usuarios').doc(userId).delete();
+                    carregarListaUsuarios();
+                    mostrarMensagem('Usuário excluído com sucesso!', 'sucesso');
+                } catch (error) {
+                    console.error("Erro ao excluir usuário:", error);
+                    mostrarMensagem('Erro ao excluir usuário.', 'erro');
+                }
+            }
+        }
+
+        // Funções de CRUD para locais
+        async function adicionarLocal(e) {
             e.preventDefault();
             
-            const novoRegistro = {
-                id: Date.now(),
-                local: document.getElementById('local').value,
-                data: document.getElementById('data').value,
-                horario: document.getElementById('horario').value,
-                responsavel: document.getElementById('responsavel').value,
-                contato: document.getElementById('contato').value,
+            const novoLocal = {
+                nome: document.getElementById('nomeLocal').value,
+                endereco: document.getElementById('enderecoLocal').value,
+                responsavel: document.getElementById('responsavelLocal').value,
+                contato: document.getElementById('contatoLocal').value,
+                capacidade: document.getElementById('capacidadeLocal').value || null,
                 dataCriacao: new Date().toISOString(),
                 criadoPor: usuarioLogado.email
             };
             
-            registros.push(novoRegistro);
-            await salvarDados();
-            
-            document.getElementById('cadastroForm').reset();
-            document.getElementById('data').valueAsDate = new Date();
-            
-            mostrarMensagem('Registro adicionado com sucesso!', 'sucesso');
+            try {
+                // Salvar no Firebase
+                const docRef = await db.collection('locais').add(novoLocal);
+                novoLocal.id = docRef.id;
+                
+                // Adicionar à lista local
+                locais.push(novoLocal);
+                
+                document.getElementById('cadastroLocalForm').reset();
+                mostrarMensagem('Local adicionado com sucesso!', 'sucesso');
+                
+                // Atualizar select de locais
+                atualizarSelectLocais();
+            } catch (error) {
+                console.error("Erro ao adicionar local:", error);
+                mostrarMensagem('Erro ao adicionar local.', 'erro');
+            }
         }
 
-        function carregarRegistros() {
-            const tbody = document.querySelector('#tabelaRegistros tbody');
-            tbody.innerHTML = '';
+        async function adicionarEvento(e) {
+            e.preventDefault();
             
-            if (registros.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum registro encontrado.</td></tr>';
+            const localId = document.getElementById('localEvento').value;
+            const localSelecionado = locais.find(l => l.id === localId);
+            
+            if (!localSelecionado) {
+                mostrarMensagem('Selecione um local válido.', 'erro');
                 return;
             }
             
-            // Ordenar registros por data (mais recente primeiro)
-            const registrosOrdenados = [...registros].sort((a, b) => 
-                new Date(b.dataCriacao) - new Date(a.dataCriacao)
+            const horarioInicio = document.getElementById('horarioInicio').value;
+            const horarioFim = document.getElementById('horarioFim').value;
+            
+            // Verificar se horário de término é após horário de início
+            if (horarioFim <= horarioInicio) {
+                mostrarMensagem('O horário de término deve ser após o horário de início.', 'erro');
+                return;
+            }
+            
+            const novoEvento = {
+                localId: localId,
+                localNome: localSelecionado.nome,
+                escola: document.getElementById('escolaEvento').value,
+                data: document.getElementById('dataEvento').value,
+                horarioInicio: horarioInicio,
+                horarioFim: horarioFim,
+                responsavel: document.getElementById('responsavelEvento').value,
+                contato: document.getElementById('contatoEvento').value,
+                observacoes: document.getElementById('observacoesEvento').value || '',
+                dataCriacao: new Date().toISOString(),
+                criadoPor: usuarioLogado.email
+            };
+            
+            try {
+                // Salvar no Firebase
+                const docRef = await db.collection('eventos').add(novoEvento);
+                novoEvento.id = docRef.id;
+                
+                // Adicionar à lista local
+                eventos.push(novoEvento);
+                
+                document.getElementById('cadastroEventoForm').reset();
+                document.getElementById('dataEvento').valueAsDate = new Date();
+                
+                mostrarMensagem('Evento adicionado com sucesso!', 'sucesso');
+            } catch (error) {
+                console.error("Erro ao adicionar evento:", error);
+                mostrarMensagem('Erro ao adicionar evento.', 'erro');
+            }
+        }
+
+        function carregarLocais() {
+            const tbody = document.querySelector('#tabelaLocais tbody');
+            tbody.innerHTML = '';
+            
+            if (locais.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum local encontrado.</td></tr>';
+                return;
+            }
+            
+            // Ordenar locais por nome
+            const locaisOrdenados = [...locais].sort((a, b) => 
+                a.nome.localeCompare(b.nome)
             );
             
-            registrosOrdenados.forEach(registro => {
+            locaisOrdenados.forEach(local => {
                 const tr = document.createElement('tr');
                 
-                const data = new Date(registro.data);
-                const dataFormatada = data.toLocaleDateString('pt-BR');
+                // Contar eventos para este local
+                const eventosLocal = eventos.filter(e => e.localId === local.id);
                 
                 tr.innerHTML = `
-                    <td>${registro.local}</td>
-                    <td>${dataFormatada}</td>
-                    <td>${registro.horario}</td>
-                    <td>${registro.responsavel}</td>
+                    <td>${local.nome}</td>
+                    <td>${local.endereco}</td>
+                    <td>${local.responsavel}</td>
+                    <td>${eventosLocal.length} evento(s)</td>
                     <td>
-                        <button class="btn-info" onclick="mostrarContato(${registro.id})"><i class="fas fa-address-card"></i> Contato</button>
-                        <button class="btn-edit" onclick="editarRegistro(${registro.id})"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="btn-delete" onclick="excluirRegistro(${registro.id})"><i class="fas fa-trash"></i> Excluir</button>
-                        <div id="contato-${registro.id}" class="contato-info">
-                            <strong>Contato:</strong><br>
-                            ${registro.contato || 'Nenhum contato informado.'}
-                        </div>
+                        <button class="btn-info" onclick="verDetalhesLocal('${local.id}')"><i class="fas fa-info-circle"></i> Detalhes</button>
+                        <button class="btn-edit" onclick="editarLocal('${local.id}')"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="btn-delete" onclick="excluirLocal('${local.id}')"><i class="fas fa-trash"></i> Excluir</button>
                     </td>
                 `;
                 
@@ -1042,83 +1226,90 @@
             });
         }
 
-        function editarRegistro(id) {
-            // Cancelar edição anterior se houver
-            if (registroEditando) {
-                cancelarEdicao();
+        function filtrarLocais() {
+            const termo = document.getElementById('pesquisaLocal').value.toLowerCase();
+            const linhas = document.querySelectorAll('#tabelaLocais tbody tr');
+            
+            linhas.forEach(linha => {
+                const nomeLocal = linha.cells[0].textContent.toLowerCase();
+                if (nomeLocal.includes(termo)) {
+                    linha.style.display = '';
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+        }
+
+        function limparPesquisa() {
+            document.getElementById('pesquisaLocal').value = '';
+            filtrarLocais();
+        }
+
+        async function verDetalhesLocal(localId) {
+            localSelecionado = locais.find(l => l.id === localId);
+            if (!localSelecionado) return;
+            
+            // Mostrar nome do local
+            document.getElementById('nomeLocalDetalhes').textContent = localSelecionado.nome;
+            
+            // Carregar eventos deste local
+            const eventosLocal = eventos.filter(e => e.localId === localId);
+            
+            const listaEventos = document.getElementById('listaEventos');
+            listaEventos.innerHTML = '';
+            
+            if (eventosLocal.length === 0) {
+                listaEventos.innerHTML = '<p>Nenhum evento agendado para este local.</p>';
+            } else {
+                // Ordenar eventos por data e horário
+                eventosLocal.sort((a, b) => {
+                    const dataA = new Date(a.data + 'T' + a.horarioInicio);
+                    const dataB = new Date(b.data + 'T' + b.horarioInicio);
+                    return dataA - dataB;
+                });
+                
+                eventosLocal.forEach(evento => {
+                    const eventoItem = document.createElement('div');
+                    eventoItem.className = 'evento-item';
+                    
+                    const dataEvento = new Date(evento.data);
+                    const dataFormatada = dataEvento.toLocaleDateString('pt-BR');
+                    
+                    eventoItem.innerHTML = `
+                        <div>
+                            <strong>${evento.escola}</strong><br>
+                            <span>${dataFormatada} - ${evento.horarioInicio} às ${evento.horarioFim}</span><br>
+                            <span>Responsável: ${evento.responsavel}</span>
+                        </div>
+                        <div>
+                            <button class="btn-info" onclick="mostrarContatoEvento('${evento.id}')"><i class="fas fa-address-card"></i> Contato</button>
+                            <button class="btn-edit" onclick="editarEvento('${evento.id}')"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="btn-delete" onclick="excluirEvento('${evento.id}')"><i class="fas fa-trash"></i> Excluir</button>
+                            <div id="contato-evento-${evento.id}" class="contato-info">
+                                <strong>Contato:</strong><br>
+                                ${evento.contato || 'Nenhum contato informado.'}<br>
+                                ${evento.observacoes ? `<strong>Observações:</strong><br>${evento.observacoes}` : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    listaEventos.appendChild(eventoItem);
+                });
             }
             
-            const registro = registros.find(r => r.id === id);
-            if (!registro) return;
-            
-            registroEditando = id;
-            
-            const tr = document.querySelector(`button[onclick="editarRegistro(${id})"]`).parentNode.parentNode;
-            
-            tr.innerHTML = `
-                <td colspan="5">
-                    <div class="edit-form">
-                        <h3>Editando Registro</h3>
-                        <form onsubmit="salvarEdicao(event, ${id})">
-                            <div class="form-group">
-                                <label for="edit-local">Local:</label>
-                                <input type="text" id="edit-local" value="${registro.local}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="edit-data">Data:</label>
-                                <input type="date" id="edit-data" value="${registro.data}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="edit-horario">Horário:</label>
-                                <input type="time" id="edit-horario" value="${registro.horario}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="edit-responsavel">Responsável:</label>
-                                <input type="text" id="edit-responsavel" value="${registro.responsavel}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="edit-contato">Contato:</label>
-                                <textarea id="edit-contato" rows="3">${registro.contato || ''}</textarea>
-                            </div>
-                            <div>
-                                <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar</button>
-                                <button type="button" class="btn-cancel" onclick="cancelarEdicao()"><i class="fas fa-times"></i> Cancelar</button>
-                            </div>
-                        </form>
-                    </div>
-                </td>
-            `;
+            // Mostrar detalhes e esconder tabela
+            document.getElementById('tabelaLocais').classList.add('hidden');
+            document.getElementById('detalhesLocal').classList.remove('hidden');
         }
 
-        async function salvarEdicao(e, id) {
-            e.preventDefault();
-            
-            const registroIndex = registros.findIndex(r => r.id === id);
-            if (registroIndex === -1) return;
-            
-            registros[registroIndex] = {
-                ...registros[registroIndex],
-                local: document.getElementById('edit-local').value,
-                data: document.getElementById('edit-data').value,
-                horario: document.getElementById('edit-horario').value,
-                responsavel: document.getElementById('edit-responsavel').value,
-                contato: document.getElementById('edit-contato').value
-            };
-            
-            await salvarDados();
-            registroEditando = null;
-            carregarRegistros();
-            
-            mostrarMensagem('Registro atualizado com sucesso!', 'sucesso');
+        function fecharDetalhes() {
+            document.getElementById('detalhesLocal').classList.add('hidden');
+            document.getElementById('tabelaLocais').classList.remove('hidden');
+            localSelecionado = null;
         }
 
-        function cancelarEdicao() {
-            registroEditando = null;
-            carregarRegistros();
-        }
-
-        function mostrarContato(id) {
-            const contatoDiv = document.getElementById(`contato-${id}`);
+        function mostrarContatoEvento(eventoId) {
+            const contatoDiv = document.getElementById(`contato-evento-${eventoId}`);
             if (contatoDiv.style.display === 'block') {
                 contatoDiv.style.display = 'none';
             } else {
@@ -1130,70 +1321,151 @@
             }
         }
 
-        async function excluirRegistro(id) {
-            if (confirm('Tem certeza que deseja excluir este registro?')) {
-                registros = registros.filter(r => r.id !== id);
-                await salvarDados();
-                carregarRegistros();
-                atualizarEstatisticas();
-                mostrarMensagem('Registro excluído com sucesso!', 'sucesso');
+        function editarLocal(localId) {
+            // Implementar edição de local
+            mostrarMensagem('Funcionalidade de edição em desenvolvimento.', 'alerta');
+        }
+
+        function editarEvento(eventoId) {
+            // Implementar edição de evento
+            mostrarMensagem('Funcionalidade de edição em desenvolvimento.', 'alerta');
+        }
+
+        async function excluirLocal(localId) {
+            if (confirm('Tem certeza que deseja excluir este local? Todos os eventos associados também serão excluídos.')) {
+                try {
+                    // Excluir local do Firebase
+                    await db.collection('locais').doc(localId).delete();
+                    
+                    // Excluir eventos associados
+                    const eventosParaExcluir = eventos.filter(e => e.localId === localId);
+                    for (const evento of eventosParaExcluir) {
+                        await db.collection('eventos').doc(evento.id).delete();
+                    }
+                    
+                    // Atualizar listas locais
+                    locais = locais.filter(l => l.id !== localId);
+                    eventos = eventos.filter(e => e.localId !== localId);
+                    
+                    carregarLocais();
+                    atualizarEstatisticas();
+                    mostrarMensagem('Local excluído com sucesso!', 'sucesso');
+                } catch (error) {
+                    console.error("Erro ao excluir local:", error);
+                    mostrarMensagem('Erro ao excluir local.', 'erro');
+                }
+            }
+        }
+
+        async function excluirEvento(eventoId) {
+            if (confirm('Tem certeza que deseja excluir este evento?')) {
+                try {
+                    // Excluir evento do Firebase
+                    await db.collection('eventos').doc(eventoId).delete();
+                    
+                    // Atualizar lista local
+                    eventos = eventos.filter(e => e.id !== eventoId);
+                    
+                    // Recarregar detalhes se estiverem abertos
+                    if (localSelecionado) {
+                        verDetalhesLocal(localSelecionado.id);
+                    }
+                    
+                    atualizarEstatisticas();
+                    mostrarMensagem('Evento excluído com sucesso!', 'sucesso');
+                } catch (error) {
+                    console.error("Erro ao excluir evento:", error);
+                    mostrarMensagem('Erro ao excluir evento.', 'erro');
+                }
             }
         }
 
         // Funções de backup e exportação
-        function fazerBackupJSON() {
-            const backupName = document.getElementById('backupName').value || 'backup-dados';
-            const dataStr = JSON.stringify({
-                registros: registros,
-                usuarios: usuarios,
-                dataBackup: new Date().toISOString(),
-                versao: '1.0'
-            }, null, 2);
-            
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            const exportFileDefaultName = `${backupName}-${new Date().toISOString().slice(0,10)}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
-            // Atualizar data do último backup
-            ultimoBackup = new Date().toISOString();
-            localStorage.setItem('ultimoBackup', ultimoBackup);
-            verificarBackupStatus();
-            
-            mostrarMensagem('Backup JSON criado com sucesso!', 'sucesso');
+        async function fazerBackupJSON() {
+            try {
+                const backupName = document.getElementById('backupName').value || 'backup-dados';
+                
+                // Buscar dados atualizados
+                await carregarDados();
+                
+                const dataStr = JSON.stringify({
+                    locais: locais,
+                    eventos: eventos,
+                    usuarios: usuarios,
+                    dataBackup: new Date().toISOString(),
+                    versao: '1.0'
+                }, null, 2);
+                
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                const exportFileDefaultName = `${backupName}-${new Date().toISOString().slice(0,10)}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                
+                // Atualizar data do último backup
+                ultimoBackup = new Date().toISOString();
+                localStorage.setItem('ultimoBackup', ultimoBackup);
+                verificarBackupStatus();
+                
+                mostrarMensagem('Backup JSON criado com sucesso!', 'sucesso');
+            } catch (error) {
+                console.error("Erro ao criar backup:", error);
+                mostrarMensagem('Erro ao criar backup.', 'erro');
+            }
         }
 
         function exportarParaExcel() {
-            if (registros.length === 0) {
-                mostrarMensagem('Não há registros para exportar!', 'erro');
+            if (locais.length === 0) {
+                mostrarMensagem('Não há dados para exportar!', 'erro');
                 return;
             }
             
             // Preparar dados para exportação
-            const dadosExportacao = registros.map(registro => ({
-                'Local': registro.local,
-                'Data': registro.data,
-                'Horário': registro.horario,
-                'Responsável': registro.responsavel,
-                'Contato': registro.contato || '',
-                'Data de Criação': new Date(registro.dataCriacao).toLocaleString('pt-BR')
-            }));
+            const dadosExportacao = [];
+            
+            // Adicionar locais
+            locais.forEach(local => {
+                dadosExportacao.push({
+                    'Tipo': 'Local',
+                    'Nome': local.nome,
+                    'Endereço': local.endereco,
+                    'Responsável': local.responsavel,
+                    'Contato': local.contato || '',
+                    'Capacidade': local.capacidade || '',
+                    'Data de Criação': new Date(local.dataCriacao).toLocaleString('pt-BR')
+                });
+            });
+            
+            // Adicionar eventos
+            eventos.forEach(evento => {
+                dadosExportacao.push({
+                    'Tipo': 'Evento',
+                    'Local': evento.localNome,
+                    'Escola/Grupo': evento.escola,
+                    'Data': evento.data,
+                    'Horário Início': evento.horarioInicio,
+                    'Horário Término': evento.horarioFim,
+                    'Responsável': evento.responsavel,
+                    'Contato': evento.contato || '',
+                    'Observações': evento.observacoes || '',
+                    'Data de Criação': new Date(evento.dataCriacao).toLocaleString('pt-BR')
+                });
+            });
             
             // Criar planilha
             const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
             
             // Gerar arquivo
-            XLSX.writeFile(workbook, `registros-${new Date().toISOString().slice(0,10)}.xlsx`);
+            XLSX.writeFile(workbook, `dados-sistema-${new Date().toISOString().slice(0,10)}.xlsx`);
             
             mostrarMensagem('Planilha Excel exportada com sucesso!', 'sucesso');
         }
 
-        function restaurarBackup() {
+        async function restaurarBackup() {
             const fileInput = document.getElementById('restoreFile');
             const file = fileInput.files[0];
             
@@ -1207,23 +1479,41 @@
                 try {
                     const dados = JSON.parse(e.target.result);
                     
-                    if (!dados.registros || !Array.isArray(dados.registros)) {
+                    if (!dados.locais || !Array.isArray(dados.locais)) {
                         throw new Error('Formato de arquivo inválido');
                     }
                     
-                    if (!confirm(`Tem certeza que deseja restaurar ${dados.registros.length} registros? Todos os dados atuais serão substituídos.`)) {
+                    if (!confirm(`Tem certeza que deseja restaurar ${dados.locais.length} locais e ${dados.eventos?.length || 0} eventos? Todos os dados atuais serão substituídos.`)) {
                         return;
                     }
                     
-                    registros = dados.registros;
-                    if (dados.usuarios && Array.isArray(dados.usuarios)) {
-                        usuarios = dados.usuarios;
+                    // Limpar dados atuais
+                    await limparDadosFirebase();
+                    
+                    // Restaurar locais
+                    for (const local of dados.locais) {
+                        await db.collection('locais').add(local);
                     }
                     
-                    await salvarDados();
+                    // Restaurar eventos
+                    if (dados.eventos && Array.isArray(dados.eventos)) {
+                        for (const evento of dados.eventos) {
+                            await db.collection('eventos').add(evento);
+                        }
+                    }
                     
-                    mostrarMensagem(`Backup restaurado com sucesso! ${dados.registros.length} registros importados.`, 'sucesso');
-                    carregarRegistros();
+                    // Restaurar usuários (se houver)
+                    if (dados.usuarios && Array.isArray(dados.usuarios)) {
+                        for (const usuario of dados.usuarios) {
+                            await db.collection('usuarios').add(usuario);
+                        }
+                    }
+                    
+                    // Recarregar dados
+                    await carregarDados();
+                    
+                    mostrarMensagem(`Backup restaurado com sucesso! ${dados.locais.length} locais e ${dados.eventos?.length || 0} eventos importados.`, 'sucesso');
+                    carregarLocais();
                     atualizarEstatisticas();
                     
                     // Limpar seleção de arquivo
@@ -1237,39 +1527,61 @@
             reader.readAsText(file);
         }
 
+        // Limpar todos os dados do Firebase
+        async function limparDadosFirebase() {
+            try {
+                // Limpar eventos
+                const eventosSnapshot = await db.collection('eventos').get();
+                for (const doc of eventosSnapshot.docs) {
+                    await db.collection('eventos').doc(doc.id).delete();
+                }
+                
+                // Limpar locais
+                const locaisSnapshot = await db.collection('locais').get();
+                for (const doc of locaisSnapshot.docs) {
+                    await db.collection('locais').doc(doc.id).delete();
+                }
+                
+                // Limpar usuários (exceto admin)
+                const usuariosSnapshot = await db.collection('usuarios').get();
+                for (const doc of usuariosSnapshot.docs) {
+                    const usuario = doc.data();
+                    if (usuario.email !== "admin@exemplo.com") {
+                        await db.collection('usuarios').doc(doc.id).delete();
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao limpar dados:", error);
+                throw new Error("Não foi possível limpar os dados atuais");
+            }
+        }
+
         function atualizarEstatisticas() {
             const estatisticasDiv = document.getElementById('estatisticas');
-            const totalRegistros = registros.length;
+            const totalLocais = locais.length;
+            const totalEventos = eventos.length;
             
-            if (totalRegistros === 0) {
-                estatisticasDiv.innerHTML = '<p>Nenhum registro cadastrado ainda.</p>';
+            if (totalLocais === 0) {
+                estatisticasDiv.innerHTML = '<p>Nenhum local cadastrado ainda.</p>';
                 return;
             }
             
-            // Encontrar o registro mais recente
-            const maisRecente = [...registros].sort((a, b) => 
-                new Date(b.dataCriacao) - new Date(a.dataCriacao)
-            )[0];
+            // Encontrar o local com mais eventos
+            let localMaisEventos = null;
+            let maxEventos = 0;
             
-            // Contar registros por local
-            const locais = {};
-            registros.forEach(registro => {
-                if (!locais[registro.local]) {
-                    locais[registro.local] = 0;
+            for (const local of locais) {
+                const eventosLocal = eventos.filter(e => e.localId === local.id).length;
+                if (eventosLocal > maxEventos) {
+                    maxEventos = eventosLocal;
+                    localMaisEventos = local.nome;
                 }
-                locais[registro.local]++;
-            });
-            
-            let locaisHTML = '';
-            for (const local in locais) {
-                locaisHTML += `<li><strong>${local}:</strong> ${locais[local]} registro(s)</li>`;
             }
             
             estatisticasDiv.innerHTML = `
-                <p><strong>Total de registros:</strong> ${totalRegistros}</p>
-                <p><strong>Último registro:</strong> ${new Date(maisRecente.dataCriacao).toLocaleString('pt-BR')}</p>
-                <p><strong>Registros por local:</strong></p>
-                <ul>${locaisHTML}</ul>
+                <p><strong>Total de locais:</strong> ${totalLocais}</p>
+                <p><strong>Total de eventos:</strong> ${totalEventos}</p>
+                <p><strong>Local com mais eventos:</strong> ${localMaisEventos} (${maxEventos} eventos)</p>
             `;
         }
 
@@ -1298,8 +1610,8 @@
         }
 
         function verificarNecessidadeBackup() {
-            if (!ultimoBackup && registros.length > 5) {
-                if (confirm('Você tem vários registros mas ainda não fez backup. Deseja fazer um backup agora?')) {
+            if (!ultimoBackup && locais.length > 5) {
+                if (confirm('Você tem vários locais mas ainda não fez backup. Deseja fazer um backup agora?')) {
                     mostrarPagina('adminPage');
                 }
             }
