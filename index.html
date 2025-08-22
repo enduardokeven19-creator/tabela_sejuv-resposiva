@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Cadastro - Sejuv</title>
+    <title>Sistema de Cadastro com Persistência</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -377,6 +377,22 @@
             color: var(--amarelo);
         }
         
+        .user-list {
+            margin-top: 20px;
+        }
+        
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -427,6 +443,12 @@
             .user-badge {
                 margin: 10px 0 0 0;
             }
+            
+            .user-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
         }
     </style>
 </head>
@@ -468,7 +490,7 @@
         <div id="cadastroPage" class="content hidden">
             <header>
                 <div>
-                    <h1><i class="fas fa-user-plus"></i> Cadastrar Novo Usuário</h1>
+                    <h1><i class="fas fa-user-plus"></i> Gerenciar Usuários</h1>
                     <div class="user-badge">
                         <i class="fas fa-user"></i>
                         <span id="currentUser"></span>
@@ -500,6 +522,13 @@
                     </div>
                 </form>
             </div>
+
+            <div class="card">
+                <h2>Usuários Cadastrados</h2>
+                <div id="listaUsuarios" class="user-list">
+                    <!-- Lista de usuários será preenchida via JavaScript -->
+                </div>
+            </div>
         </div>
 
         <!-- Página de Área de Cadastro de Registros -->
@@ -522,7 +551,7 @@
             
             <div class="card">
                 <div class="info-box">
-                    <p><strong><i class="fas fa-lightbulb"></i> Dica:</strong> Seus dados são salvos automaticamente no navegador.</p>
+                    <p><strong><i class="fas fa-lightbulb"></i> Dica:</strong> Seus dados são salvos automaticamente.</p>
                 </div>
                 
                 <h2>Novo Registro</h2>
@@ -674,6 +703,12 @@
         let isOnline = true;
         let registroEditando = null;
 
+        // API URL - usando JSONBin.io para persistência (gratuito)
+        const API_BASE = 'https://api.jsonbin.io/v3/b';
+        const BIN_ID_USUARIOS = '68a89f62d0ea881f40609404'; // Substitua pelo seu bin ID
+        const BIN_ID_REGISTROS = '68a89f9ad0ea881f40609430'; // Substitua pelo seu bin ID
+        const API_KEY = '$2a$10$NC7cjNTX1oDjhFt4VceTzu9GZwBIAYj3FcQ/X7YVR3zUbDuc302f.'; // Substitua pela sua chave
+
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             // Verificar status de conexão
@@ -681,20 +716,9 @@
             window.addEventListener('online', verificarConexao);
             window.addEventListener('offline', verificarConexao);
             
-            // Carregar dados do localStorage
+            // Carregar dados
             carregarDados();
             
-            // Verificar se há usuário logado
-            const usuarioSalvo = localStorage.getItem('usuarioLogado');
-            if (usuarioSalvo) {
-                usuarioLogado = JSON.parse(usuarioSalvo);
-                atualizarInterfaceUsuario();
-                mostrarPagina('tabelaPage');
-                carregarRegistros();
-                atualizarEstatisticas();
-                verificarBackupStatus();
-            }
-
             // Configurar formulários
             document.getElementById('loginForm').addEventListener('submit', fazerLogin);
             document.getElementById('cadastroUserForm').addEventListener('submit', cadastrarUsuario);
@@ -703,6 +727,93 @@
             // Configurar data atual como padrão
             document.getElementById('data').valueAsDate = new Date();
         });
+
+        // Carregar dados da API
+        async function carregarDados() {
+            try {
+                // Carregar usuários
+                const responseUsuarios = await fetch(`${API_BASE}/${BIN_ID_USUARIOS}/latest`, {
+                    headers: {
+                        'X-Master-Key': API_KEY
+                    }
+                });
+                
+                if (responseUsuarios.ok) {
+                    const data = await responseUsuarios.json();
+                    usuarios = data.record?.usuarios || [{email: "admin@exemplo.com", senha: "123456"}];
+                } else {
+                    usuarios = [{email: "admin@exemplo.com", senha: "123456"}];
+                }
+                
+                // Carregar registros
+                const responseRegistros = await fetch(`${API_BASE}/${BIN_ID_REGISTROS}/latest`, {
+                    headers: {
+                        'X-Master-Key': API_KEY
+                    }
+                });
+                
+                if (responseRegistros.ok) {
+                    const data = await responseRegistros.json();
+                    registros = data.record?.registros || [];
+                } else {
+                    registros = [];
+                }
+                
+                // Verificar se há usuário logado
+                const usuarioSalvo = localStorage.getItem('usuarioLogado');
+                if (usuarioSalvo) {
+                    usuarioLogado = JSON.parse(usuarioSalvo);
+                    atualizarInterfaceUsuario();
+                    mostrarPagina('tabelaPage');
+                    carregarRegistros();
+                    atualizarEstatisticas();
+                    verificarBackupStatus();
+                }
+            } catch (error) {
+                console.error("Erro ao carregar dados:", error);
+                mostrarMensagem("Erro ao carregar dados. Verifique sua conexão.", "erro");
+                
+                // Usar dados locais em caso de falha
+                usuarios = JSON.parse(localStorage.getItem('usuarios')) || [{email: "admin@exemplo.com", senha: "123456"}];
+                registros = JSON.parse(localStorage.getItem('registros')) || [];
+                ultimoBackup = localStorage.getItem('ultimoBackup');
+            }
+        }
+
+        // Salvar dados na API
+        async function salvarDados() {
+            try {
+                // Salvar usuários
+                await fetch(`${API_BASE}/${BIN_ID_USUARIOS}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify({ usuarios })
+                });
+                
+                // Salvar registros
+                await fetch(`${API_BASE}/${BIN_ID_REGISTROS}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify({ registros })
+                });
+                
+                // Também salvar localmente como fallback
+                localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                localStorage.setItem('registros', JSON.stringify(registros));
+            } catch (error) {
+                console.error("Erro ao salvar dados:", error);
+                // Salvar apenas localmente em caso de falha
+                localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                localStorage.setItem('registros', JSON.stringify(registros));
+                mostrarMensagem("Dados salvos localmente (sem conexão).", "alerta");
+            }
+        }
 
         // Atualizar interface com informações do usuário
         function atualizarInterfaceUsuario() {
@@ -716,7 +827,48 @@
                     document.querySelectorAll('#adminLink, #adminLink2').forEach(el => {
                         el.classList.remove('hidden');
                     });
+                    carregarListaUsuarios();
                 }
+            }
+        }
+
+        // Carregar lista de usuários para administrador
+        function carregarListaUsuarios() {
+            const listaUsuarios = document.getElementById('listaUsuarios');
+            listaUsuarios.innerHTML = '';
+            
+            if (usuarios.length === 0) {
+                listaUsuarios.innerHTML = '<p>Nenhum usuário cadastrado.</p>';
+                return;
+            }
+            
+            usuarios.forEach(usuario => {
+                if (usuario.email === "admin@exemplo.com") return; // Não mostrar admin na lista
+                
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.innerHTML = `
+                    <div>
+                        <strong>${usuario.email}</strong>
+                    </div>
+                    <div>
+                        <button class="btn-delete" onclick="excluirUsuario('${usuario.email}')">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                `;
+                
+                listaUsuarios.appendChild(userItem);
+            });
+        }
+
+        // Excluir usuário
+        async function excluirUsuario(email) {
+            if (confirm(`Tem certeza que deseja excluir o usuário ${email}?`)) {
+                usuarios = usuarios.filter(u => u.email !== email);
+                await salvarDados();
+                carregarListaUsuarios();
+                mostrarMensagem('Usuário excluído com sucesso!', 'sucesso');
             }
         }
 
@@ -739,24 +891,6 @@
             }
         }
 
-        // Carregar dados do localStorage
-        function carregarDados() {
-            try {
-                registros = JSON.parse(localStorage.getItem('registros')) || [];
-                usuarios = JSON.parse(localStorage.getItem('usuarios')) || [{email: "admin@exemplo.com", senha: "123456"}];
-                ultimoBackup = localStorage.getItem('ultimoBackup');
-                
-                // Se não há usuários, cria o padrão
-                if (usuarios.length === 0) {
-                    usuarios = [{email: "admin@exemplo.com", senha: "123456"}];
-                    localStorage.setItem('usuarios', JSON.stringify(usuarios));
-                }
-            } catch (e) {
-                console.error("Erro ao carregar dados:", e);
-                mostrarMensagem("Erro ao carregar dados. Pode ser necessário restaurar de um backup.", "erro");
-            }
-        }
-
         // Funções de navegação
         function mostrarPagina(paginaId) {
             document.querySelectorAll('.content').forEach(pagina => {
@@ -771,6 +905,8 @@
             } else if (paginaId === 'adminPage') {
                 atualizarEstatisticas();
                 verificarBackupStatus();
+            } else if (paginaId === 'cadastroPage' && usuarioLogado?.email === "admin@exemplo.com") {
+                carregarListaUsuarios();
             }
             
             // Limpar edição se estiver saindo da tabela
@@ -808,7 +944,7 @@
             }
         }
 
-        function cadastrarUsuario(e) {
+        async function cadastrarUsuario(e) {
             e.preventDefault();
             
             // Verificar se o usuário atual é o administrador
@@ -835,14 +971,15 @@
             // Adicionar novo usuário
             const novoUsuario = { email, senha };
             usuarios.push(novoUsuario);
-            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            await salvarDados();
             
             mostrarMensagem('Usuário cadastrado com sucesso!', 'sucesso');
             document.getElementById('cadastroUserForm').reset();
+            carregarListaUsuarios();
         }
 
         // Funções de CRUD para registros
-        function adicionarRegistro(e) {
+        async function adicionarRegistro(e) {
             e.preventDefault();
             
             const novoRegistro = {
@@ -852,21 +989,17 @@
                 horario: document.getElementById('horario').value,
                 responsavel: document.getElementById('responsavel').value,
                 contato: document.getElementById('contato').value,
-                dataCriacao: new Date().toISOString()
+                dataCriacao: new Date().toISOString(),
+                criadoPor: usuarioLogado.email
             };
             
             registros.push(novoRegistro);
-            salvarDados();
+            await salvarDados();
             
             document.getElementById('cadastroForm').reset();
             document.getElementById('data').valueAsDate = new Date();
             
             mostrarMensagem('Registro adicionado com sucesso!', 'sucesso');
-        }
-
-        function salvarDados() {
-            localStorage.setItem('registros', JSON.stringify(registros));
-            localStorage.setItem('usuarios', JSON.stringify(usuarios));
         }
 
         function carregarRegistros() {
@@ -957,7 +1090,7 @@
             `;
         }
 
-        function salvarEdicao(e, id) {
+        async function salvarEdicao(e, id) {
             e.preventDefault();
             
             const registroIndex = registros.findIndex(r => r.id === id);
@@ -972,7 +1105,7 @@
                 contato: document.getElementById('edit-contato').value
             };
             
-            salvarDados();
+            await salvarDados();
             registroEditando = null;
             carregarRegistros();
             
@@ -997,10 +1130,10 @@
             }
         }
 
-        function excluirRegistro(id) {
+        async function excluirRegistro(id) {
             if (confirm('Tem certeza que deseja excluir este registro?')) {
                 registros = registros.filter(r => r.id !== id);
-                salvarDados();
+                await salvarDados();
                 carregarRegistros();
                 atualizarEstatisticas();
                 mostrarMensagem('Registro excluído com sucesso!', 'sucesso');
@@ -1070,7 +1203,7 @@
             }
             
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const dados = JSON.parse(e.target.result);
                     
@@ -1087,7 +1220,7 @@
                         usuarios = dados.usuarios;
                     }
                     
-                    salvarDados();
+                    await salvarDados();
                     
                     mostrarMensagem(`Backup restaurado com sucesso! ${dados.registros.length} registros importados.`, 'sucesso');
                     carregarRegistros();
@@ -1201,5 +1334,4 @@
         }
     </script>
 </body>
-
 </html>
